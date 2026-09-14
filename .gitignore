@@ -1,0 +1,25 @@
+# Build outputs — binaries are distributed as GitHub release assets, not in git.
+build/
+dist/
+release/
+**/bin/
+**/obj/
+windows/HenryMonitor.Setup/Payload/*.exe
+windows/HenryMonitor.Setup/Payload/*.apk
+windows/HenryMonitor.Setup/Payload/*.dll
+
+# Signing secrets must never leave this machine.
+signing/*
+!signing/README.md
+
+# Private photos and personal files.
+photos/
+HenryMonitor/
+HenryMonitor-*.apk
+HenryMonitor.apk
+HenryMonitorSetup.exe
+SHA256SUMS.txt
+calm.html
+
+# Prerequisites copied from the Android SDK during setup (see BUILDING.md).
+tools/android-prereqs/

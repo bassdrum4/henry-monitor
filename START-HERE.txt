@@ -1,0 +1,68 @@
+HENRY SYSTEM MONITOR 1.3.0 — INSTALLATION
+
+1. Put the Galaxy J7 and Henry's Windows PC on the same private Wi-Fi.
+2. Keep the J7 unlocked, connect it by USB, and approve USB debugging.
+3. Double-click HenryMonitorSetup.exe.
+4. Follow the installer and accept the administrator prompts for the signed
+   hardware-sensor driver and private-network firewall rule.
+5. Enter the six-digit Windows pairing code on the phone.
+
+If the PC is not found automatically, tap SEARCH / PAIR, choose MANUAL IP,
+and enter the IPv4 address shown in the Windows companion.
+
+If Henry's PC uses AVG, Norton, McAfee, or another third-party firewall, allow
+%LOCALAPPDATA%\HenryMonitor\HenryMonitor.exe on the trusted local network.
+Windows Defender rules are configured automatically.
+
+OPENING THE WINDOWS MONITOR LATER
+
+Use the Henry System Monitor shortcut on the Desktop or in the Start menu.
+The app normally stays running in the notification area; opening either
+shortcut restores its window. You do not need to run Setup again.
+Setup also opens the Windows monitor visibly after installation so the pairing
+code is ready to enter immediately.
+
+HARDWARE READINGS
+
+Approve Setup's administrator prompts. Setup creates a hardware-enabled
+startup task so CPU, GPU, temperature, and fan readings work after reboot
+without asking for permission each time. If only memory appears, run this
+Setup once more and approve the startup-task and PawnIO driver prompts.
+
+The installer is self-contained. It does not need Android Studio, Java, .NET,
+or internet access.
+
+WINDOWS SECURITY NOTICE
+
+This is a personal build and does not have a commercial Authenticode
+certificate, so Windows may display "Unknown publisher." Use "More info" and
+"Run anyway" only after confirming the SHA-256 checksum in SHA256SUMS.txt.
+
+CURRENT SAMSUNG ACCOUNT
+
+Setup does not remove or bypass the old Samsung account. The phone can run in
+fullscreen Home mode now, but do not give it away while personal data or an
+account remains. After account recovery, remove Samsung and Google accounts,
+reset through Android Settings, skip account sign-in during initial setup,
+enable USB debugging, and run Setup again. That second run enables Android's
+strong locked kiosk mode.
+
+MAINTENANCE
+
+Use the three-dot menu at the upper-right of the phone display to reconnect,
+check for app updates, or temporarily unlock Android controls. Uninstall from
+Windows Settings > Apps.
+
+AUTOMATIC UPDATES
+
+Both apps update themselves. The Windows companion checks a private update
+feed every few hours and installs new releases on its own (also available from
+its notification-icon menu, "Check for updates"). The phone app checks the
+same feed after boot and every six hours and installs new versions silently.
+There is nothing to download or run by hand once Setup has finished.
+
+A second hidden birthday wish appears when the colorful Henry logo is tapped
+five times.
+
+If the old battery swells, separates the back cover, smells unusual, or becomes
+hot, unplug the phone and stop using it.

@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>HenryPhotos</AssemblyName>
+    <RootNamespace>HenryPhotos</RootNamespace>
+    <Version>1.0.0</Version>
+    <Product>Henry Photos</Product>
+    <Company>Daniel Lowe</Company>
+    <Description>Manage the screensaver photos on Henry's phone from the PC.</Description>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <ApplicationIcon>../../assets/henry-monitor.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- adb travels inside the exe so the tool works on PCs that never
+         had Henry Monitor installed; it unpacks on first launch. -->
+    <EmbeddedResource Include="..\HenryMonitor.Setup\Payload\adb.exe" LogicalName="HenryPhotos.adb.exe" />
+    <EmbeddedResource Include="..\HenryMonitor.Setup\Payload\AdbWinApi.dll" LogicalName="HenryPhotos.AdbWinApi.dll" />
+    <EmbeddedResource Include="..\HenryMonitor.Setup\Payload\AdbWinUsbApi.dll" LogicalName="HenryPhotos.AdbWinUsbApi.dll" />
+  </ItemGroup>
+</Project>

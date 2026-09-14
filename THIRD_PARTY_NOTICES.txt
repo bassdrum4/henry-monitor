@@ -1,0 +1,16 @@
+Henry System Monitor includes LibreHardwareMonitorLib 0.9.7-pre733.
+Copyright (c) the Libre Hardware Monitor contributors.
+Licensed under the Mozilla Public License 2.0.
+Source: https://github.com/LibreHardwareMonitor/LibreHardwareMonitor
+License: https://www.mozilla.org/MPL/2.0/
+
+The installer includes Android SDK Platform-Tools (ADB) from Google solely to
+configure the dedicated Android display. Android SDK components are provided
+under their applicable Android SDK terms.
+
+The installer includes the official unmodified PawnIO Setup 2.2.0 package.
+Copyright (c) the PawnIO contributors. The package explicitly permits
+unmodified redistribution. Source: https://github.com/namazso/PawnIO.Setup
+
+The self-contained Windows executables include components of the Microsoft .NET
+runtime under their applicable Microsoft licenses and third-party notices.
