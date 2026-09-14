@@ -13,7 +13,7 @@ repo="bassdrum4/henry-monitor"
 
 agent_version="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' \
   "$project_root/windows/HenryMonitor.Agent/HenryMonitor.Agent.csproj" | head -1)"
-version_code="$(sed -n 's:.*android:versionCode="\([0-9]*\)".*:\1:p' \
+version_code="$(sed -n 's|.*android:versionCode="\([0-9]*\)".*|\1|p' \
   "$project_root/android/AndroidManifest.xml")"
 [[ -n "$version_code" ]] || { echo "Could not read android:versionCode" >&2; exit 1; }
 tag="v$agent_version"
