@@ -19,7 +19,8 @@ Both apps keep themselves current, so an installation on someone else's PC impro
 
 - The Windows companion checks a small published feed every six hours (first check a couple of minutes after launch) and from its notification-icon menu (`Check for updates`). A newer release is downloaded in the background, verified against its SHA-256 checksum, and swapped in; the monitor restarts through its existing startup task and reappears on its own.
 - The phone app checks the same feed a few minutes after boot and at most every six hours, silently installing newer signed builds through Android's package installer (the kiosk phone allows this without prompts). `Henry Monitor settings → Check for app updates` triggers it manually.
-- The feed lives at `https://henry-monitor-updates.pages.dev/feed.json` (Cloudflare Pages) and also serves the current `HenryMonitorSetup.exe`-grade artifacts for manual installs.
+- The feed lives in this project's public GitHub releases: `https://github.com/bassdrum4/henry-monitor/releases/latest/download/feed.json`. The newest release also carries `HenryMonitorSetup.exe` for manual installs and `SHA256SUMS.txt` for verifying it.
+- The full source for every published build is in the same repository, so what runs on the devices is always reviewable.
 - A failed or interrupted agent update cannot brick the install: the previous executable is kept as `HenryMonitor.exe.old` and restored automatically if the new image is missing.
 
 Publishing a new version is one command from the development machine: `./scripts/publish-update.sh` builds everything, runs the tests, and deploys the feed. Henry's devices pick it up within six hours.

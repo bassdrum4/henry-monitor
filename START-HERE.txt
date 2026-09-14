@@ -55,11 +55,12 @@ Windows Settings > Apps.
 
 AUTOMATIC UPDATES
 
-Both apps update themselves. The Windows companion checks a private update
-feed every few hours and installs new releases on its own (also available from
-its notification-icon menu, "Check for updates"). The phone app checks the
-same feed after boot and every six hours and installs new versions silently.
-There is nothing to download or run by hand once Setup has finished.
+Both apps update themselves. The Windows companion checks the project's
+public GitHub releases every few hours and installs new versions on its own
+(also available from its notification-icon menu, "Check for updates"). The
+phone app checks the same feed after boot and every six hours and installs
+new versions silently. There is nothing to download or run by hand once
+Setup has finished.
 
 A second hidden birthday wish appears when the colorful Henry logo is tapped
 five times.

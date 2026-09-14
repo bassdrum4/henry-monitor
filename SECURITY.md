@@ -15,10 +15,10 @@ Henry System Monitor is designed for one trusted phone and one Windows PC on a p
 
 ## Automatic updates
 
-The Windows agent and Android app poll one static update feed on Cloudflare Pages (`https://henry-monitor-updates.pages.dev/feed.json`).
+The Windows agent and Android app poll the project's public GitHub releases (`https://github.com/bassdrum4/henry-monitor/releases/latest/download/feed.json`).
 
 - Updates are downloaded over HTTPS only and verified against the SHA-256 digest recorded in the feed before anything is installed. A checksum mismatch aborts and changes nothing.
-- The feed is static content; it carries no code and no secrets. Compromising it can only serve a doctored build, which still must match the feed's own digest — and both apps compare versions so a feed cannot downgrade an install.
+- The feed is a release asset; it carries no code and no secrets. Compromising it can only serve a doctored build, which still must match the feed's own digest — and both apps compare versions so a feed cannot downgrade an install. Every published binary is built from the source in this same public repository.
 - The agent keeps its previous executable as `HenryMonitor.exe.old` and restores it automatically if a swap leaves the install unusable.
 - The feed URL is compiled into both apps. To retire or relocate the feed, publish a final release that changes nothing but the URL handling, or reinstall from a newer Setup.
 

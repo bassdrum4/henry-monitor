@@ -41,9 +41,9 @@ Run:
 ./scripts/publish-update.sh
 ```
 
-This rebuilds the Android app and Windows agent, runs the protocol tests, chunks the self-contained agent executable into 20 MiB parts (static-host per-file limit), writes `feed.json` with versions, sizes, and SHA-256 digests, and deploys everything to the `henry-monitor-updates` Cloudflare Pages project with `wrangler`. Installed agents and phone apps poll `https://henry-monitor-updates.pages.dev/feed.json` and update themselves.
+This rebuilds the Android app and Windows agent, runs the protocol tests, writes `feed.json` with versions, sizes, and SHA-256 digests, and publishes everything (`HenryMonitor.exe`, `HenryMonitor.apk`, `HenryMonitorSetup.exe`, `feed.json`, `SHA256SUMS.txt`) as assets on a draft release `v<version>` in `bassdrum4/henry-monitor`, then flips it published. Installed agents and phone apps poll `https://github.com/bassdrum4/henry-monitor/releases/latest/download/feed.json` and update themselves. Re-running the script for an existing version replaces that release's assets idempotently; use `RELEASE_NOTES="..." ./scripts/publish-update.sh` to set the release notes.
 
-Bump versions first: `<Version>` in both Windows `.csproj` files, `DisplayVersion` in `windows/HenryMonitor.Setup/Installer.cs`, and `android:versionCode` / `android:versionName` in `android/AndroidManifest.xml` (`versionCode` must also be updated in `scripts/publish-update.sh`). Updates only install when the feed version is strictly newer.
+Bump versions first: `<Version>` in both Windows `.csproj` files, `DisplayVersion` in `windows/HenryMonitor.Setup/Installer.cs`, and `android:versionCode` / `android:versionName` in `android/AndroidManifest.xml`. Updates only install when the feed version is strictly newer.
 
 ## Verification
 
