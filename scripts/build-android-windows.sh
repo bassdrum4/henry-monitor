@@ -9,8 +9,10 @@ java_root="${JAVA_HOME:-/c/Program Files/Android/Android Studio/jbr}"
 build_tools="$android_sdk/build-tools/34.0.0"
 # d8 in 34.0.0 is a broken dev build; use a newer one for dexing.
 d8_tools="$android_sdk/build-tools/36.0.0"
-android_jar="$android_sdk/platforms/android-28/android.jar"
-[[ -f "$android_jar" ]] || android_jar="$android_sdk/platforms/android-34/android.jar"
+android_jar="$android_sdk/platforms/android-34/android.jar"
+# FLAG_MUTABLE (API 31) and friends need a modern compile platform; fall back
+# to android-28 only on machines that never installed a newer one.
+[[ -f "$android_jar" ]] || android_jar="$android_sdk/platforms/android-28/android.jar"
 for required in "$build_tools/aapt2.exe" "$build_tools/zipalign.exe" "$build_tools/lib/apksigner.jar" \
                 "$d8_tools/lib/d8.jar" "$android_jar" "$java_root/bin/java.exe" "$java_root/bin/javac.exe"; do
   if [[ ! -e "$required" ]]; then

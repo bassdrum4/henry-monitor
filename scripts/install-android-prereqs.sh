@@ -36,11 +36,11 @@ rc=0
 yes | "$sdkmanager" --licenses > /dev/null 2>&1 || rc=$?
 [[ $rc -eq 0 || $rc -eq 141 ]] || { echo "License acceptance failed (exit $rc)" >&2; exit "$rc"; }
 
-"$sdkmanager" --install "platform-tools" "platforms;android-28" "build-tools;34.0.0" "build-tools;36.0.0"
+"$sdkmanager" --install "platform-tools" "platforms;android-34" "build-tools;34.0.0" "build-tools;36.0.0"
 
 for required in "build-tools/34.0.0/aapt2.exe" "build-tools/34.0.0/zipalign.exe" \
                 "build-tools/34.0.0/lib/apksigner.jar" "build-tools/36.0.0/lib/d8.jar" \
-                "platforms/android-28/android.jar"; do
+                "platforms/android-34/android.jar"; do
   [[ -f "$sdk/$required" ]] || { echo "Missing after install: $sdk/$required" >&2; exit 1; }
 done
 echo "Android SDK prerequisites ready in $sdk"
