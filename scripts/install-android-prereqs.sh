@@ -29,8 +29,14 @@ done
   exit 1
 }
 
-yes | "$sdkmanager" --licenses > /dev/null
-"$sdkmanager" --install "platform-tools" "platforms;android-28" "build-tools;34.0.0" "build-tools;36.0.0" > /dev/null
+# Accept licenses. On runners where every license is already accepted,
+# sdkmanager exits immediately and `yes` dies of SIGPIPE (exit 141) — treat
+# that as success rather than a failure.
+rc=0
+yes | "$sdkmanager" --licenses > /dev/null 2>&1 || rc=$?
+[[ $rc -eq 0 || $rc -eq 141 ]] || { echo "License acceptance failed (exit $rc)" >&2; exit "$rc"; }
+
+"$sdkmanager" --install "platform-tools" "platforms;android-28" "build-tools;34.0.0" "build-tools;36.0.0"
 
 for required in "build-tools/34.0.0/aapt2.exe" "build-tools/34.0.0/zipalign.exe" \
                 "build-tools/34.0.0/lib/apksigner.jar" "build-tools/36.0.0/lib/d8.jar" \
