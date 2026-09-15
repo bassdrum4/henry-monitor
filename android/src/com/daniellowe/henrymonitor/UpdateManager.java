@@ -107,9 +107,10 @@ public final class UpdateManager {
         final CountDownLatch received = new CountDownLatch(1);
         BroadcastReceiver observer = new BroadcastReceiver() {
             @Override public void onReceive(Context ctx, Intent intent) {
-                int status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, -1);
-                Log.i(TAG, "Install status broadcast: " + status
-                        + " (0=success 1=pending-user 2=failure)");
+                int status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, -999);
+                String detail = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);
+                Log.w(TAG, "Install status broadcast: " + status
+                        + " message=" + detail);
                 received.countDown();
             }
         };

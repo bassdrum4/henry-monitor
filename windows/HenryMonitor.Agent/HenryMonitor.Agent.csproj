@@ -10,7 +10,7 @@
     <RootNamespace>HenryMonitor</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>../../assets/henry-monitor.ico</ApplicationIcon>
-    <Version>1.3.5</Version>
+    <Version>1.3.7</Version>
     <Product>Henry System Monitor</Product>
     <Company>Daniel Lowe</Company>
     <Description>Private local PC telemetry and control companion for Henry System Monitor.</Description>
