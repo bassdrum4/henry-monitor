@@ -18,10 +18,10 @@ version_code="$(sed -n 's|.*android:versionCode="\([0-9]*\)".*|\1|p' \
 [[ -n "$version_code" ]] || { echo "Could not read android:versionCode" >&2; exit 1; }
 tag="v$agent_version"
 
-token="$(printf 'protocol=https\nhost=github.com\n' | \
+token="${GITHUB_TOKEN:-$(printf 'protocol=https\nhost=github.com\n' | \
   GIT_TERMINAL_PROMPT=0 GCM_INTERACTIVE=never git credential fill 2>/dev/null | \
-  sed -n 's/^password=//p')"
-[[ -n "$token" ]] || { echo "No stored GitHub credentials found (git credential fill)." >&2; exit 1; }
+  sed -n 's/^password=//p')}"
+[[ -n "$token" ]] || { echo "No GitHub token: set GITHUB_TOKEN or store credentials (git credential fill)." >&2; exit 1; }
 
 api() { curl -s -H "Authorization: token $token" -H "Accept: application/vnd.github+json" "$@"; }
 

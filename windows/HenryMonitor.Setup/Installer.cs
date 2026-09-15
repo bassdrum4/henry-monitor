@@ -152,7 +152,7 @@ internal static class Installer
         using var key = Registry.CurrentUser.CreateSubKey(
             @"Software\Microsoft\Windows\CurrentVersion\Uninstall\" + AppId);
         key.SetValue("DisplayName", "Henry System Monitor");
-        key.SetValue("DisplayVersion", "1.3.0");
+        key.SetValue("DisplayVersion", "1.3.1");
         key.SetValue("Publisher", "Daniel Lowe");
         key.SetValue("InstallLocation", InstallDirectory);
         key.SetValue("DisplayIcon", AgentPath);
