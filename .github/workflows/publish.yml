@@ -32,10 +32,7 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Install the Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install the Android build tools the app needs
+      - name: Install the Android SDK packages the app needs
         run: bash scripts/install-android-prereqs.sh
         shell: bash
 

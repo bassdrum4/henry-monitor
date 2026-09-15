@@ -43,6 +43,8 @@ Run:
 
 This rebuilds the Android app and Windows agent, runs the protocol tests, writes `feed.json` with versions, sizes, and SHA-256 digests, and publishes everything (`HenryMonitor.exe`, `HenryMonitor.apk`, `HenryMonitorSetup.exe`, `feed.json`, `SHA256SUMS.txt`) as assets on a draft release `v<version>` in `bassdrum4/henry-monitor`, then flips it published. Installed agents and phone apps poll `https://github.com/bassdrum4/henry-monitor/releases/latest/download/feed.json` and update themselves. Re-running the script for an existing version replaces that release's assets idempotently; use `RELEASE_NOTES="..." ./scripts/publish-update.sh` to set the release notes.
 
+Machine-provided Setup payload binaries (the adb platform tools and `HenryPhotos.exe`) are fetched automatically from the repo's pinned `payload` release by `scripts/fetch-payload.sh`; `PawnIO_setup.exe` comes from the official `namazso/PawnIO.Setup` releases. Pushing a `v*` tag — or running the `publish` workflow manually from GitHub's Actions tab — runs the same pipeline on CI, signing the Android app with the repository's `HM_KEYSTORE_B64` / `HM_KEYSTORE_PASSWORD` secrets.
+
 Bump versions first: `<Version>` in both Windows `.csproj` files, `DisplayVersion` in `windows/HenryMonitor.Setup/Installer.cs`, and `android:versionCode` / `android:versionName` in `android/AndroidManifest.xml`. Updates only install when the feed version is strictly newer.
 
 ## Verification

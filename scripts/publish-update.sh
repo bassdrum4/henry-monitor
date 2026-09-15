@@ -34,6 +34,7 @@ dotnet publish "$project_root/windows/HenryMonitor.Agent/HenryMonitor.Agent.cspr
   -c Release -r win-x64 --self-contained true -o "$agent_out"
 
 echo "== Building Setup installer =="
+"$project_root/scripts/fetch-payload.sh"
 mkdir -p "$project_root/windows/HenryMonitor.Setup/Payload"
 cp "$agent_out/HenryMonitor.exe" "$project_root/windows/HenryMonitor.Setup/Payload/HenryMonitor.exe"
 cp "$dist/HenryMonitor.apk" "$project_root/windows/HenryMonitor.Setup/Payload/HenryMonitor.apk"
