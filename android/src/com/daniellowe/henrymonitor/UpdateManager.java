@@ -65,7 +65,7 @@ public final class UpdateManager {
             int latestCode = android.optInt("versionCode", 0);
             PackageInfo installed = context.getPackageManager()
                     .getPackageInfo(context.getPackageName(), 0);
-            Log.i(TAG, "Feed offers " + android.optString("versionName") + " (code "
+            Log.i(TAG, "Feed offers " + android.optString("version") + " (code "
                     + latestCode + "); installed code " + installed.versionCode);
             if (latestCode <= installed.versionCode) {
                 return "Already up to date (app " + installed.versionName + ").";
