@@ -25,6 +25,35 @@ token="${GITHUB_TOKEN:-$(printf 'protocol=https\nhost=github.com\n' | \
 
 api() { curl -s -H "Authorization: token $token" -H "Accept: application/vnd.github+json" "$@"; }
 
+# Mutating API call that fails loudly: prints the response body on success,
+# or aborts with the HTTP status and body on failure.
+api_call() {  # api_call <method> <url> [json-body]
+  local method="$1" url="$2" body="${3:-}" tmp code rc
+  tmp="$(mktemp)"
+  if [[ -n "$body" ]]; then
+    code="$(curl -s -o "$tmp" -w '%{http_code}' -X "$method" \
+      -H "Authorization: token $token" -H "Accept: application/vnd.github+json" \
+      -H "Content-Type: application/json" -d "$body" "$url")"
+  else
+    code="$(curl -s -o "$tmp" -w '%{http_code}' -X "$method" \
+      -H "Authorization: token $token" -H "Accept: application/vnd.github+json" "$url")"
+  fi
+  rc=$?
+  if (( rc != 0 )); then
+    rm -f "$tmp"
+    echo "GitHub API transport error (curl exit $rc) for $method $url" >&2
+    exit 1
+  fi
+  if [[ ! "$code" =~ ^2 ]]; then
+    echo "GitHub API $method $url failed with HTTP $code:" >&2
+    cat "$tmp" >&2
+    rm -f "$tmp"
+    exit 1
+  fi
+  cat "$tmp"
+  rm -f "$tmp"
+}
+
 echo "== Building Android app =="
 "$project_root/scripts/build-android-windows.sh"
 
@@ -62,11 +91,7 @@ setup_sha="$(sha256sum "$staging/HenryMonitorSetup.exe" | awk '{print $1}')"
 
 notes="${RELEASE_NOTES:-Agent and phone automatic self-updates via GitHub releases.}"
 published="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-notes_json="$(python - "$notes" <<'PY'
-import json, sys
-print(json.dumps(sys.argv[1]))
-PY
-)"
+notes_json="$(printf '%s' "$notes" | python -c 'import json,sys; print(json.dumps(sys.stdin.read()))' | tr -d '\r\n')"
 
 cat > "$staging/feed.json" <<EOF
 {
@@ -97,6 +122,7 @@ cp "$staging/SHA256SUMS.txt" "$dist/SHA256SUMS.txt"
 
 echo "== Preparing GitHub release $tag =="
 release_json="$(api "https://api.github.com/repos/$repo/releases/tags/$tag")"
+# tr: Windows python's print() emits CRLF, which poisons captured ids.
 release_id="$(printf '%s' "$release_json" | python -c "
 import json, sys
 try:
@@ -104,45 +130,46 @@ try:
     print(data.get('id', ''))
 except Exception:
     print('')
-")"
+" | tr -d '\r')"
 
 if [[ -z "$release_id" ]]; then
   echo "   creating $tag"
-  release_id="$(api -X POST "https://api.github.com/repos/$repo/releases" \
-    -d "{\"tag_name\":\"$tag\",\"target_commitish\":\"main\",\"name\":\"Henry System Monitor $agent_version\",\"body\":$notes_json,\"draft\":true,\"prerelease\":false}" \
-    | python -c "import json,sys; print(json.load(sys.stdin).get('id',''))")"
+  release_json="$(api_call POST "https://api.github.com/repos/$repo/releases" \
+    "{\"tag_name\":\"$tag\",\"target_commitish\":\"main\",\"name\":\"Henry System Monitor $agent_version\",\"body\":$notes_json,\"draft\":true,\"prerelease\":false}")"
+  release_id="$(printf '%s' "$release_json" | python -c "import json,sys; print(json.load(sys.stdin).get('id',''))" | tr -d '\r')"
   [[ -n "$release_id" ]] || { echo "Could not create the release (is $repo pushed?)" >&2; exit 1; }
 else
   echo "   updating existing $tag (id $release_id)"
-  api -X PATCH "https://api.github.com/repos/$repo/releases/$release_id" \
-    -d "{\"name\":\"Henry System Monitor $agent_version\",\"body\":$notes_json,\"draft\":true}" > /dev/null
+  api_call PATCH "https://api.github.com/repos/$repo/releases/$release_id" \
+    "{\"name\":\"Henry System Monitor $agent_version\",\"body\":$notes_json,\"draft\":true}" > /dev/null
 fi
 
 # Replace same-name assets so republishing a version stays idempotent.
-while IFS= read -r asset_id; do
-  [[ -n "$asset_id" ]] && api -X DELETE "https://api.github.com/repos/$repo/releases/assets/$asset_id" > /dev/null
-done < <(printf '%s' "$release_json" | python -c "
+# tr: Windows python prints CRLF, which would poison the ids in URLs.
+printf '%s' "$release_json" | python -c "
 import json, sys
 try:
     for asset in json.load(sys.stdin).get('assets', []):
         print(asset['id'])
 except Exception:
     pass
-")
+" | tr -d '\r' | while IFS= read -r asset_id; do
+  [[ -n "$asset_id" ]] && api_call DELETE "https://api.github.com/repos/$repo/releases/assets/$asset_id" > /dev/null
+done
 
 echo "== Uploading assets =="
 for file in HenryMonitor.exe HenryMonitor.apk HenryMonitorSetup.exe SHA256SUMS.txt feed.json; do
   printf '   %s (%s bytes) ' "$file" "$(stat -c %s "$staging/$file" 2>/dev/null || stat -f %z "$staging/$file")"
-  code="$(curl -s -o /tmp/asset-upload.json -w '%{http_code}' \
+  code="$(curl -s -o "$staging/upload-reply.json" -w '%{http_code}' \
     -X POST -H "Authorization: token $token" \
     -H 'Content-Type: application/octet-stream' \
     --data-binary "@$staging/$file" \
     "https://uploads.github.com/repos/$repo/releases/$release_id/assets?name=$file")"
-  [[ "$code" == 201 ]] && echo "ok" || { echo "FAILED (HTTP $code)"; cat /tmp/asset-upload.json; exit 1; }
+  [[ "$code" == 201 ]] && echo "ok" || { echo "FAILED (HTTP $code)"; cat "$staging/upload-reply.json"; exit 1; }
 done
 
 # Publishing last makes releases/latest flip over atomically with assets in place.
-api -X PATCH "https://api.github.com/repos/$repo/releases/$release_id" -d '{"draft":false}' > /dev/null
+api_call PATCH "https://api.github.com/repos/$repo/releases/$release_id" '{"draft":false}' > /dev/null
 
 echo ""
 echo "Published $agent_version as $tag:"
