@@ -71,9 +71,14 @@ public final class UpdateManager {
             if (apkUrl.isEmpty() || expected.length() != 64) {
                 return "The update feed is malformed; nothing was changed.";
             }
-            if (!apkUrl.startsWith("https://")) return "Refusing non-HTTPS update source.";
+            // The feed may ship a bare filename (resolved against the feed
+            // URL, as GitHub releases do) or a full https URL. Resolve first,
+            // then enforce HTTPS on the final download address.
+            String downloadUrl = apkUrl.startsWith("https://")
+                    ? apkUrl : FEED_URL.replace("feed.json", apkUrl);
+            if (!downloadUrl.startsWith("https://")) return "Refusing non-HTTPS update source.";
 
-            byte[] apk = fetchBytes(FEED_URL.replace("feed.json", apkUrl));
+            byte[] apk = fetchBytes(downloadUrl);
             if (apk.length < MIN_APK_BYTES) return "The downloaded update is implausibly small.";
             if (!sha256Hex(apk).equalsIgnoreCase(expected)) {
                 return "The downloaded update failed its checksum. Nothing was installed.";
