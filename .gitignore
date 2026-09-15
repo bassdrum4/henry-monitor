@@ -14,7 +14,7 @@ signing/*
 
 # Private photos and personal files.
 photos/
-HenryMonitor/
+/HenryMonitor/
 HenryMonitor-*.apk
 HenryMonitor.apk
 HenryMonitorSetup.exe
