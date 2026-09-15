@@ -10,6 +10,7 @@ import android.content.pm.PackageInstaller;
 import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
 import org.json.JSONObject;
 
@@ -30,6 +31,8 @@ import java.util.concurrent.TimeUnit;
  * shows the standard confirmation dialog instead.
  */
 public final class UpdateManager {
+    private static final String TAG = "HenryUpdate";
+
     // GitHub "latest release" download URLs resolve anonymously to the most
     // recently published release on the public project repository.
     public static final String FEED_URL =
@@ -62,6 +65,8 @@ public final class UpdateManager {
             int latestCode = android.optInt("versionCode", 0);
             PackageInfo installed = context.getPackageManager()
                     .getPackageInfo(context.getPackageName(), 0);
+            Log.i(TAG, "Feed offers " + android.optString("versionName") + " (code "
+                    + latestCode + "); installed code " + installed.versionCode);
             if (latestCode <= installed.versionCode) {
                 return "Already up to date (app " + installed.versionName + ").";
             }
@@ -69,6 +74,7 @@ public final class UpdateManager {
             String apkUrl = android.optString("path", "");
             String expected = android.optString("sha256", "");
             if (apkUrl.isEmpty() || expected.length() != 64) {
+                Log.w(TAG, "Malformed feed entry: path='" + apkUrl + "' sha='" + expected + "'");
                 return "The update feed is malformed; nothing was changed.";
             }
             // The feed may ship a bare filename (resolved against the feed
@@ -79,14 +85,18 @@ public final class UpdateManager {
             if (!downloadUrl.startsWith("https://")) return "Refusing non-HTTPS update source.";
 
             byte[] apk = fetchBytes(downloadUrl);
+            String actual = sha256Hex(apk);
+            Log.i(TAG, "Downloaded " + apk.length + " bytes from " + downloadUrl
+                    + "; sha ok=" + actual.equalsIgnoreCase(expected));
             if (apk.length < MIN_APK_BYTES) return "The downloaded update is implausibly small.";
-            if (!sha256Hex(apk).equalsIgnoreCase(expected)) {
+            if (!actual.equalsIgnoreCase(expected)) {
                 return "The downloaded update failed its checksum. Nothing was installed.";
             }
 
             installApk(context, apk);
             return "Installing update " + android.optString("versionName", "") + "…";
         } catch (final Exception ex) {
+            Log.e(TAG, "Update check failed", ex);
             return "Update check failed: " + ex.getMessage();
         }
     }
@@ -97,6 +107,9 @@ public final class UpdateManager {
         final CountDownLatch received = new CountDownLatch(1);
         BroadcastReceiver observer = new BroadcastReceiver() {
             @Override public void onReceive(Context ctx, Intent intent) {
+                int status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, -1);
+                Log.i(TAG, "Install status broadcast: " + status
+                        + " (0=success 1=pending-user 2=failure)");
                 received.countDown();
             }
         };
@@ -119,7 +132,9 @@ public final class UpdateManager {
             Intent confirmed = new Intent(INSTALL_ACTION).setPackage(context.getPackageName());
             PendingIntent callback = PendingIntent.getBroadcast(context, 0, confirmed, intentFlags);
             session.commit(callback.getIntentSender());
+            Log.i(TAG, "Install session committed.");
         } catch (Exception failure) {
+            Log.e(TAG, "Install session failed before commit", failure);
             context.unregisterReceiver(observer);
             throw failure;
         } finally {

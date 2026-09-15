@@ -10,7 +10,7 @@
     <RootNamespace>HenryMonitor.Setup</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>../../assets/henry-monitor.ico</ApplicationIcon>
-    <Version>1.3.3</Version>
+    <Version>1.3.4</Version>
     <Product>Henry System Monitor Setup</Product>
     <Company>Daniel Lowe</Company>
     <PublishSingleFile>true</PublishSingleFile>
