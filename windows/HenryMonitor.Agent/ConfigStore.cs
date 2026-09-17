@@ -62,4 +62,13 @@ public sealed class ConfigStore
     }
 
     private static string CreateToken() => Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
+
+    /// <summary>Path of the config.json the agent uses by default.</summary>
+    public static string DefaultConfigPath()
+    {
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "HenryMonitor",
+            "config.json");
+    }
 }

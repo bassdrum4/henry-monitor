@@ -4,10 +4,11 @@ using System.Text.Json;
 namespace HenryMonitor;
 
 /// <summary>
-/// Pulls local weather from Open-Meteo (free, no API key) for the location the
-/// machine's public IP is in. Refreshes every 30 minutes; on failure the last
-/// reading is kept and a retry happens sooner. A missing reading never blocks
-/// telemetry — the phone simply hides the weather strip.
+/// Pulls local weather from Open-Meteo (free, no API key). The location comes
+/// from config.json ("latitude"/"longitude"/"city") when present, otherwise
+/// from the machine's public IP. Refreshes every 30 minutes; on failure the
+/// last reading is kept and a retry happens sooner. A missing reading never
+/// blocks telemetry — the phone simply hides the weather strip.
 /// </summary>
 public sealed class WeatherService : IDisposable
 {
@@ -20,6 +21,7 @@ public sealed class WeatherService : IDisposable
 
     public WeatherService()
     {
+        _place = LoadConfiguredLocation();
         _loop = Task.Run(() => RunAsync(_stop.Token));
     }
 
@@ -116,7 +118,10 @@ public sealed class WeatherService : IDisposable
                 var lat = latEl.GetDouble();
                 var lon = lonEl.GetDouble();
                 if (double.IsNaN(lat) || double.IsNaN(lon) || (lat == 0 && lon == 0)) continue;
-                var city = root.TryGetProperty("city", out var cityEl) ? cityEl.GetString() ?? "" : "";
+                // IP geolocation typically resolves to the ISP's regional hub
+                // rather than the actual town, so only its coordinates are
+                // trusted; the city label is reverse-geocoded from them.
+                var city = await ReverseGeocodeCityAsync(lat, lon, token).ConfigureAwait(false);
                 return (lat, lon, city);
             }
             catch
@@ -125,6 +130,66 @@ public sealed class WeatherService : IDisposable
             }
         }
         return null;
+    }
+
+    private static async Task<string> ReverseGeocodeCityAsync(double lat, double lon, CancellationToken token)
+    {
+        try
+        {
+            var url = string.Format(CultureInfo.InvariantCulture,
+                "https://geocoding-api.open-meteo.com/v1/reverse?latitude={0}&longitude={1}&count=1&language=en&format=json",
+                lat, lon);
+            using var response = await Http.GetAsync(url, token).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode) return "";
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(token).ConfigureAwait(false));
+            if (!doc.RootElement.TryGetProperty("results", out var results) || results.GetArrayLength() == 0) return "";
+            var first = results[0];
+            // Prefer the city/town/village over whatever generic name is set.
+            foreach (var key in new[] { "city", "town", "village", "name" })
+            {
+                if (first.TryGetProperty(key, out var el) && el.GetString() is { Length: > 0 } value)
+                    return value;
+            }
+        }
+        catch
+        {
+            // A missing city label only means the dashboard shows a blank
+            // location name; the coordinates still drive the forecast.
+        }
+        return "";
+    }
+
+    /// <summary>
+    /// Reads optional "latitude"/"longitude"/"city" keys from config.json so
+    /// the weather can be pinned to a real place when IP geolocation is
+    /// wrong. Unknown keys are tolerated; invalid values fall back to IP
+    /// lookup.
+    /// </summary>
+    private static (double Lat, double Lon, string City)? LoadConfiguredLocation()
+    {
+        try
+        {
+            var path = ConfigStore.DefaultConfigPath();
+            if (!File.Exists(path)) return null;
+            using var doc = JsonDocument.Parse(File.ReadAllText(path));
+            var root = doc.RootElement;
+            if (root.ValueKind != JsonValueKind.Object) return null;
+            if (!root.TryGetProperty("latitude", out var latEl) ||
+                !root.TryGetProperty("longitude", out var lonEl) ||
+                latEl.ValueKind != JsonValueKind.Number || lonEl.ValueKind != JsonValueKind.Number)
+                return null;
+            var lat = latEl.GetDouble();
+            var lon = lonEl.GetDouble();
+            if (double.IsNaN(lat) || double.IsNaN(lon) || (lat == 0 && lon == 0)) return null;
+            var city = root.TryGetProperty("city", out var cityEl) && cityEl.ValueKind == JsonValueKind.String
+                ? cityEl.GetString() ?? ""
+                : "";
+            return (lat, lon, city);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static string DescribeWeather(int code) => code switch

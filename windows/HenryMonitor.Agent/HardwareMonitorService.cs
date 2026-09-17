@@ -101,7 +101,14 @@ public sealed class HardwareMonitorService : IDisposable
         }
 
         var cpuHardware = allHardware.Where(h => h.HardwareType == HardwareType.Cpu).ToList();
+        // Machines with an integrated GPU plus a discrete card expose two GPU
+        // devices. Picking sensors by name across all of them let readings
+        // flicker between the cards — e.g. the dGPU's "GPU Core" load one
+        // second, the idle iGPU's the next — which read as nonsense on the
+        // dial. Lock every GPU metric to one primary card instead.
         var gpuHardware = allHardware.Where(IsGpu).ToList();
+        var primaryGpu = PrimaryGpu(gpuHardware);
+        var gpuOwners = primaryGpu != null ? new[] { primaryGpu } : Array.Empty<IHardware>();
         var readings = allHardware.SelectMany(h => h.Sensors.Select(s => (Hardware: h, Sensor: s)))
             .Where(x => x.Sensor.Value.HasValue && !float.IsNaN(x.Sensor.Value.Value))
             .ToList();
@@ -117,24 +124,24 @@ public sealed class HardwareMonitorService : IDisposable
             AverageSensor(readings, cpuHardware, SensorType.Clock));
 
         var gpu = new ComponentMetric(
-            gpuHardware.FirstOrDefault()?.Name ?? "GPU",
-            PreferredSensor(readings, gpuHardware, SensorType.Temperature, "GPU Core")
-                ?? MaxSensor(readings, gpuHardware, SensorType.Temperature),
-            PreferredSensor(readings, gpuHardware, SensorType.Load, "GPU Core")
-                ?? MaxSensor(readings, gpuHardware, SensorType.Load),
-            PreferredSensor(readings, gpuHardware, SensorType.Power, "GPU Package")
-                ?? MaxSensor(readings, gpuHardware, SensorType.Power),
-            PreferredSensor(readings, gpuHardware, SensorType.Clock, "GPU Core"));
+            primaryGpu?.Name ?? "GPU",
+            PreferredSensor(readings, gpuOwners, SensorType.Temperature, "GPU Core")
+                ?? MaxSensor(readings, gpuOwners, SensorType.Temperature),
+            PreferredSensor(readings, gpuOwners, SensorType.Load, "GPU Core")
+                ?? MaxSensor(readings, gpuOwners, SensorType.Load),
+            PreferredSensor(readings, gpuOwners, SensorType.Power, "GPU Package")
+                ?? MaxSensor(readings, gpuOwners, SensorType.Power),
+            PreferredSensor(readings, gpuOwners, SensorType.Clock, "GPU Core"));
 
         var memoryStatus = ReadMemoryStatus();
-        var memoryLoad = readings
-            .Where(x => x.Hardware.HardwareType == HardwareType.Memory && x.Sensor.SensorType == SensorType.Load)
-            .Select(x => (double)x.Sensor.Value!.Value)
-            .DefaultIfEmpty(memoryStatus.LoadPercent)
-            .First();
+        // The dial must agree with the "used / total GB" text, so derive load
+        // from the same physical-memory numbers instead of the motherboard's
+        // Memory load sensor. On some boards that sensor reports a different
+        // basis (or goes stale), which is what made the dial read nearly full
+        // while the text correctly showed roughly 13 of 32 GB used.
         var memory = new ComponentMetric(
             "System memory",
-            LoadPercent: memoryLoad,
+            LoadPercent: memoryStatus.LoadPercent,
             UsedGb: memoryStatus.UsedGb,
             TotalGb: memoryStatus.TotalGb);
 
@@ -200,6 +207,20 @@ public sealed class HardwareMonitorService : IDisposable
 
     private static bool IsGpu(IHardware hardware) => hardware.HardwareType is
         HardwareType.GpuAmd or HardwareType.GpuIntel or HardwareType.GpuNvidia;
+
+    /// <summary>
+    /// Picks the GPU the dashboard reports when a machine exposes more than
+    /// one (an integrated GPU beside a discrete card). Intel hardware is
+    /// always integrated, NVIDIA is always discrete, and an AMD entry is
+    /// preferred last so an APU's idle iGPU never shadows a Radeon card.
+    /// </summary>
+    private static IHardware? PrimaryGpu(IReadOnlyList<IHardware> gpus)
+    {
+        if (gpus.Count <= 1) return gpus.FirstOrDefault();
+        return gpus.FirstOrDefault(h => h.HardwareType == HardwareType.GpuNvidia)
+            ?? gpus.FirstOrDefault(h => h.HardwareType == HardwareType.GpuAmd)
+            ?? gpus[0];
+    }
 
     private static double? PreferredSensor(
         IEnumerable<(IHardware Hardware, ISensor Sensor)> readings,
