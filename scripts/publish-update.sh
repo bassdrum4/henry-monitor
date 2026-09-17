@@ -160,12 +160,24 @@ done
 echo "== Uploading assets =="
 for file in HenryMonitor.exe HenryMonitor.apk HenryMonitorSetup.exe SHA256SUMS.txt feed.json; do
   printf '   %s (%s bytes) ' "$file" "$(stat -c %s "$staging/$file" 2>/dev/null || stat -f %z "$staging/$file")"
-  code="$(curl -s -o "$staging/upload-reply.json" -w '%{http_code}' \
-    -X POST -H "Authorization: token $token" \
-    -H 'Content-Type: application/octet-stream' \
-    --data-binary "@$staging/$file" \
-    "https://uploads.github.com/repos/$repo/releases/$release_id/assets?name=$file")"
-  [[ "$code" == 201 ]] && echo "ok" || { echo "FAILED (HTTP $code)"; cat "$staging/upload-reply.json"; exit 1; }
+  # GitHub's uploads endpoint intermittently answers 5xx ("Error saving
+  # asset", "Error creating asset temp dir") even for tiny files, and any
+  # failed asset aborts the publish — so retry each upload a few times
+  # with a growing pause before giving up.
+  ok=""
+  for attempt in 1 2 3 4; do
+    code="$(curl -s -o "$staging/upload-reply.json" -w '%{http_code}' \
+      -X POST -H "Authorization: token $token" \
+      -H 'Content-Type: application/octet-stream' \
+      --data-binary "@$staging/$file" \
+      "https://uploads.github.com/repos/$repo/releases/$release_id/assets?name=$file")"
+    if [[ "$code" == 201 ]]; then ok=1; echo "ok"; break; fi
+    echo "attempt $attempt got HTTP $code" 
+    if (( attempt < 4 )); then sleep $((attempt * 20)); fi
+  done
+  if [[ -z "$ok" ]]; then
+    echo "   $file FAILED after retries (last HTTP $code)"; cat "$staging/upload-reply.json"; exit 1
+  fi
 done
 
 # Publishing last makes releases/latest flip over atomically with assets in place.
